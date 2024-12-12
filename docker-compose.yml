@@ -1,0 +1,34 @@
+services:
+  init:
+    image: frapsoft/openssl
+    volumes:
+      - certs:/certs
+      - ./init/entry.sh:/mnt/entry.sh
+      - ./init/openssl.cnf:/mnt/openssl.cnf
+    entrypoint: ["/bin/sh", "-c", "/mnt/entry.sh"]
+  vault:
+    image: hashicorp/vault
+    ports:
+      - "8200:8200"
+    volumes:
+      - certs:/certs
+      - ./vault:/mnt
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: "root"
+      VAULT_ADDR: "https://vault:8200"
+      VAULT_API_ADDR: "https://vault:8200"
+      VAULT_DEV_LISTEN_ADDRESS: "vault:8200"
+      VAULT_LOG_LEVEL: "debug"
+    entrypoint: vault server -dev-tls -dev-tls-cert-dir=/certs
+    cap_add:
+      - IPC_LOCK
+  vc:
+    build:
+      context: ./vault-client
+    volumes:
+      - certs:/certs
+    command: tail -f /dev/null
+
+
+volumes:
+  certs:
